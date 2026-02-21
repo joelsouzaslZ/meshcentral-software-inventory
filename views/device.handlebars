@@ -130,16 +130,36 @@
 // fornecer o node id; tente usar ambos (fallback para parent frames).
 var DEVICE_ID = '{{nodeid}}';
 var PLUGIN_PIN = '{{pluginPin}}';
-if (!DEVICE_ID || DEVICE_ID === '') {
+
+// Fallback robusto: percorre a cadeia de frames pais e tenta várias propriedades
+function findDeviceIdInFrames() {
+  var w = window;
   try {
-    // Tentar extrair do parent frame (diferentes versões usam nomes distintos)
-    if (window.parent && window.parent.currentNodeId) DEVICE_ID = window.parent.currentNodeId;
-    else if (window.parent && window.parent.nodeid) DEVICE_ID = window.parent.nodeid;
-    else if (window.parent && window.parent.location) {
-      var p = new URL(window.parent.location.href);
-      DEVICE_ID = DEVICE_ID || p.searchParams.get('id') || p.searchParams.get('nodeid') || '';
+    while (w) {
+      try {
+        if (w.currentNodeId) return w.currentNodeId;
+        if (w.nodeid) return w.nodeid;
+        if (w.DEVICE_ID) return w.DEVICE_ID;
+        if (w.Device && w.Device.node && w.Device.node._id) return w.Device.node._id;
+        if (w.DeviceId) return w.DeviceId;
+        if (w.location && typeof w.location.href === 'string') {
+          var p = new URL(w.location.href);
+          var q = p.searchParams.get('id') || p.searchParams.get('nodeid') || p.searchParams.get('device') || p.searchParams.get('deviceid');
+          if (q) return q;
+        }
+      } catch (e) {
+        // ignorar cross-origin ou propriedades inacessíveis e continuar subindo
+      }
+      if (!w.parent || w.parent === w) break;
+      w = w.parent;
     }
-  } catch (e) { DEVICE_ID = DEVICE_ID || ''; }
+  } catch (e) {}
+  return '';
+}
+
+if (!DEVICE_ID || DEVICE_ID === '') {
+  var found = findDeviceIdInFrames();
+  if (found) DEVICE_ID = found;
 }
 
 var DATA_URL = '/pluginadmin.ashx?pin=' + PLUGIN_PIN + '&user=1&action=data' + (DEVICE_ID ? '&nodeid=' + encodeURIComponent(DEVICE_ID) : '');
