@@ -19,8 +19,42 @@ module.exports.softwareinventory = function (parent) {
     obj.pluginName = 'softwareinventory';
     obj.VIEWS = __dirname + '/views/';
 
+    // Mapa de requisições aguardando resposta ao vivo do agente { nodeId -> {res, timer} }
+    obj._pending = {};
+
     // Lista de funções exportadas para o lado do CLIENTE (browser)
-    obj.exports = ['onDeviceRefreshEnd'];
+    // onAgentMessage: hook server-side para interceptar mensagens vindas dos agentes
+    obj.exports = ['onDeviceRefreshEnd', 'onAgentMessage'];
+
+    // Hook server-side: chamado pelo pluginHandler sempre que um agente envia uma mensagem.
+    // Captura a resposta de 'installedapps', salva no DB e resolve requisição pendente (se houver).
+    obj.onAgentMessage = function (conn, msg, domain, node) {
+        if (!msg || msg.action !== 'installedapps') return;
+        var nodeId = (node && node._id) ? node._id : (conn && conn.dbNodeKey);
+        if (!nodeId) return;
+
+        var list = msg.list || [];
+
+        // Persiste no banco como sw<nodeId> para requisições futuras (cache)
+        var db = obj.meshServer.db;
+        if (db && typeof db.Set === 'function') {
+            db.Set({ _id: 'sw' + nodeId, type: 'softwares', list: list, ts: Date.now() }, function () {});
+        }
+
+        // Resolve a requisição HTTP pendente, se existir
+        var pending = obj._pending[nodeId];
+        if (pending) {
+            clearTimeout(pending.timer);
+            delete obj._pending[nodeId];
+            var normalized = normalizeList(list);
+            pending.res.json({
+                success: true,
+                source: 'agent-live',
+                count: normalized.length,
+                softwares: normalized
+            });
+        }
+    };
 
     // Inicialização do servidor
     obj.server_startup = function () {};
@@ -52,77 +86,73 @@ module.exports.softwareinventory = function (parent) {
             return;
         }
 
-        // Endpoint de dados JSON
+        // Endpoint de dados JSON — tenta DB primeiro; se vazio, solicita ao agente ao vivo
         if (req.query.action === 'data') {
             var nodeId = req.query.nodeid;
             if (!nodeId) return res.json({ success: false, error: 'nodeid ausente', softwares: [] });
 
             getSoftwareData(nodeId, function (err, softwares, source) {
-                if (err) return res.json({ success: false, error: err.message, softwares: [] });
-                res.json({
-                    success: true,
-                    source: source,
-                    count: softwares.length,
-                    softwares: softwares
-                });
+                // Se banco já tem dados, retorna imediatamente
+                if (!err && softwares && softwares.length > 0) {
+                    return res.json({ success: true, source: source, count: softwares.length, softwares: softwares });
+                }
+
+                // Banco vazio — tentar buscar ao vivo via WebSocket do agente
+                var wsagents = obj.meshServer.webserver && obj.meshServer.webserver.wsagents;
+                var agentConn = wsagents && (wsagents[nodeId] || wsagents['node/' + nodeId]);
+
+                if (!agentConn || typeof agentConn.send !== 'function') {
+                    // Agente offline ou API indisponível — retorna vazio com aviso
+                    return res.json({ success: true, source: 'empty', count: 0, softwares: [],
+                        message: 'Agente offline ou dados ainda não coletados. Aguarde sincronização.' });
+                }
+
+                // Registra a requisição como pendente; onAgentMessage vai resolvê-la
+                obj._pending[nodeId] = {
+                    res: res,
+                    timer: setTimeout(function () {
+                        if (obj._pending[nodeId]) {
+                            delete obj._pending[nodeId];
+                            res.json({ success: true, source: 'timeout', count: 0, softwares: [],
+                                message: 'Agente não respondeu em tempo hábil. Tente novamente.' });
+                        }
+                    }, 10000)
+                };
+
+                try {
+                    agentConn.send(JSON.stringify({ action: 'installedapps' }));
+                } catch (ex) {
+                    clearTimeout(obj._pending[nodeId].timer);
+                    delete obj._pending[nodeId];
+                    res.json({ success: false, error: 'Falha ao enviar comando ao agente: ' + ex.message, softwares: [] });
+                }
             });
             return;
         }
 
-        // Request agent to send its installed apps (live). This tries to use available
-        // server APIs to forward a message to the device. It does not guarantee delivery
-        // on every MeshCentral build; the response will indicate if a send was attempted.
-        if (req.query.action === 'requestagent') {
-            var nodeIdReq = req.query.nodeid;
-            if (!nodeIdReq) return res.json({ success: false, error: 'nodeid ausente' });
-
-            var sent = false;
-            var errors = [];
-            // Informar ao agente a URL base do servidor para que ele possa postar o resultado
-            var serverBase = '';
-            try { serverBase = (req.protocol || (req.headers && req.headers['x-forwarded-proto']) || 'https') + '://' + (req.headers.host || req.get('host')); } catch (e) { serverBase = ''; }
-            var payload = { action: 'installedapps_request', plugin: obj.pluginName, ts: Date.now(), serverUrl: serverBase };
-
-            try {
-                // Try common server API names (best-effort)
-                if (obj.meshServer && typeof obj.meshServer.SendToDevice === 'function') {
-                    obj.meshServer.SendToDevice(nodeIdReq, payload);
-                    sent = true;
-                } else if (obj.meshServer && obj.meshServer.parent && typeof obj.meshServer.parent.SendToDevice === 'function') {
-                    obj.meshServer.parent.SendToDevice(nodeIdReq, payload);
-                    sent = true;
-                } else if (parent && typeof parent.SendToDevice === 'function') {
-                    parent.SendToDevice(nodeIdReq, payload);
-                    sent = true;
-                } else {
-                    errors.push('Nenhuma API SendToDevice encontrada no servidor (impossível enviar)');
-                }
-            } catch (ex) { errors.push('Erro ao tentar enviar: ' + (ex.message || ex)); }
-
-            return res.json({ success: sent, errors: errors });
-        }
-
-        // Endpoint para o agente empurrar dados (POST JSON) e o plugin salvar no DB como 'sw'+nodeId
-        if (req.query.action === 'push' && req.method === 'POST') {
+        // Endpoint push: agente envia dados via POST JSON; plugin salva como sw<nodeId>
+        if (req.query.action === 'push') {
             var nid = req.query.nodeid || '';
             if (!nid) return res.json({ success: false, error: 'nodeid ausente' });
             var body = req.body || null;
             if (!body || !body.softwares) return res.json({ success: false, error: 'payload inválido' });
+            var dbPush = obj.meshServer.db;
+            if (!dbPush || typeof dbPush.Set !== 'function') {
+                return res.json({ success: false, error: 'db.Set indisponível' });
+            }
             try {
-                var key = 'sw' + nid;
-                if (db && typeof db.Set === 'function') {
-                    db.Set(key, { list: body.softwares, ts: Date.now() }, function (e) {
-                        if (e) return res.json({ success: false, error: String(e) });
-                        return res.json({ success: true });
-                    });
-                } else if (db && typeof db.Insert === 'function') {
-                    db.Insert(key, { list: body.softwares, ts: Date.now() }, function (e) {
-                        if (e) return res.json({ success: false, error: String(e) });
-                        return res.json({ success: true });
-                    });
-                } else {
-                    return res.json({ success: false, error: 'DB.Set não disponível neste servidor' });
-                }
+                dbPush.Set({ _id: 'sw' + nid, type: 'softwares', list: body.softwares, ts: Date.now() }, function (e) {
+                    if (e) return res.json({ success: false, error: String(e) });
+                    // Resolve pendente se houver (ex: requisição simultânea)
+                    if (obj._pending[nid]) {
+                        clearTimeout(obj._pending[nid].timer);
+                        var p = obj._pending[nid];
+                        delete obj._pending[nid];
+                        var norm = normalizeList(body.softwares);
+                        p.res.json({ success: true, source: 'push', count: norm.length, softwares: norm });
+                    }
+                    res.json({ success: true });
+                });
             } catch (ex) { return res.json({ success: false, error: ex.message || String(ex) }); }
             return;
         }

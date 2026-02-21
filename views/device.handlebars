@@ -188,7 +188,11 @@ function loadData(force) {
       }
       if (allApps.length === 0) { setState('empty'); updateStats(0, 0); }
       else { applyFilters(); document.getElementById('btnExport').disabled = false; }
-      if (json.source === 'empty') toast('Nenhum dado de software encontrado no banco do MeshCentral ainda. Aguarde a sincronização do agent.');
+      if (json.source === 'empty' || json.source === 'timeout') {
+        toast(json.message || 'Agente não respondeu. Verifique se está online e tente novamente.');
+      } else if (json.source === 'agent-live') {
+        toast('✓ Dados coletados ao vivo do agente (' + (json.count||0) + ' apps).');
+      }
     })
     .catch(function (err) { showError(err.message); })
     .finally(function () { document.getElementById('btnRefresh').disabled = false; });
