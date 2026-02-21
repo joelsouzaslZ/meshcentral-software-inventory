@@ -69,6 +69,61 @@ module.exports.softwareinventory = function (parent) {
             return;
         }
 
+        // Request agent to send its installed apps (live). This tries to use available
+        // server APIs to forward a message to the device. It does not guarantee delivery
+        // on every MeshCentral build; the response will indicate if a send was attempted.
+        if (req.query.action === 'requestagent') {
+            var nodeIdReq = req.query.nodeid;
+            if (!nodeIdReq) return res.json({ success: false, error: 'nodeid ausente' });
+
+            var sent = false;
+            var errors = [];
+            var payload = { action: 'installedapps_request', plugin: obj.pluginName, ts: Date.now() };
+
+            try {
+                // Try common server API names (best-effort)
+                if (obj.meshServer && typeof obj.meshServer.SendToDevice === 'function') {
+                    obj.meshServer.SendToDevice(nodeIdReq, payload);
+                    sent = true;
+                } else if (obj.meshServer && obj.meshServer.parent && typeof obj.meshServer.parent.SendToDevice === 'function') {
+                    obj.meshServer.parent.SendToDevice(nodeIdReq, payload);
+                    sent = true;
+                } else if (parent && typeof parent.SendToDevice === 'function') {
+                    parent.SendToDevice(nodeIdReq, payload);
+                    sent = true;
+                } else {
+                    errors.push('Nenhuma API SendToDevice encontrada no servidor (impossível enviar)');
+                }
+            } catch (ex) { errors.push('Erro ao tentar enviar: ' + (ex.message || ex)); }
+
+            return res.json({ success: sent, errors: errors });
+        }
+
+        // Endpoint para o agente empurrar dados (POST JSON) e o plugin salvar no DB como 'sw'+nodeId
+        if (req.query.action === 'push' && req.method === 'POST') {
+            var nid = req.query.nodeid || '';
+            if (!nid) return res.json({ success: false, error: 'nodeid ausente' });
+            var body = req.body || null;
+            if (!body || !body.softwares) return res.json({ success: false, error: 'payload inválido' });
+            try {
+                var key = 'sw' + nid;
+                if (db && typeof db.Set === 'function') {
+                    db.Set(key, { list: body.softwares, ts: Date.now() }, function (e) {
+                        if (e) return res.json({ success: false, error: String(e) });
+                        return res.json({ success: true });
+                    });
+                } else if (db && typeof db.Insert === 'function') {
+                    db.Insert(key, { list: body.softwares, ts: Date.now() }, function (e) {
+                        if (e) return res.json({ success: false, error: String(e) });
+                        return res.json({ success: true });
+                    });
+                } else {
+                    return res.json({ success: false, error: 'DB.Set não disponível neste servidor' });
+                }
+            } catch (ex) { return res.json({ success: false, error: ex.message || String(ex) }); }
+            return;
+        }
+
         // Servir arquivos estáticos (ícones)
         if (req.query.include != null) {
             var path = require('path');
