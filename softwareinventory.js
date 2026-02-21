@@ -67,7 +67,11 @@ module.exports.softwareinventory = function (parent) {
             tabId: 'pluginSoftwareInventory'
         });
 
-        var nid = (typeof currentNodeId !== 'undefined') ? currentNodeId : '';
+        // MeshCentral 1.1.x usa currentNode._id; versões anteriores usam currentNodeId
+        var nid = '';
+        try { if (typeof currentNode !== 'undefined' && currentNode && currentNode._id) nid = currentNode._id; } catch(e){}
+        try { if (!nid && typeof currentNodeId !== 'undefined' && currentNodeId) nid = currentNodeId; } catch(e){}
+        try { if (!nid && typeof device !== 'undefined' && device && device._id) nid = device._id; } catch(e){}
 
         QA('pluginSoftwareInventory',
             '<iframe id="pluginIframeSoftwareInventory"' +
@@ -76,6 +80,17 @@ module.exports.softwareinventory = function (parent) {
             ' src="/pluginadmin.ashx?pin=softwareinventory&user=1&nodeid=' + encodeURIComponent(nid) + '">' +
             '</iframe>'
         );
+
+        // Garantia: envia nodeId via postMessage ao iframe depois de carregado
+        // (cobre casos onde o src foi gerado sem nodeId)
+        if (nid) {
+            setTimeout(function () {
+                var iframe = document.getElementById('pluginIframeSoftwareInventory');
+                if (iframe && iframe.contentWindow) {
+                    try { iframe.contentWindow.postMessage({ type: 'mc-nodeid', nodeid: nid }, window.location.origin); } catch (e) {}
+                }
+            }, 800);
+        }
     };
 
     // Manipulador HTTP via /pluginadmin.ashx?pin=softwareinventory

@@ -137,19 +137,20 @@ function findDeviceIdInFrames() {
   try {
     while (w) {
       try {
+        // MeshCentral 1.1.x: currentNode._id
+        if (w.currentNode && w.currentNode._id) return w.currentNode._id;
         if (w.currentNodeId) return w.currentNodeId;
         if (w.nodeid) return w.nodeid;
-        if (w.DEVICE_ID) return w.DEVICE_ID;
+        if (w.DEVICE_ID && typeof w.DEVICE_ID === 'string' && w.DEVICE_ID.length > 5) return w.DEVICE_ID;
         if (w.Device && w.Device.node && w.Device.node._id) return w.Device.node._id;
+        if (w.device && w.device._id) return w.device._id;
         if (w.DeviceId) return w.DeviceId;
         if (w.location && typeof w.location.href === 'string') {
           var p = new URL(w.location.href);
           var q = p.searchParams.get('id') || p.searchParams.get('nodeid') || p.searchParams.get('device') || p.searchParams.get('deviceid');
           if (q) return q;
         }
-      } catch (e) {
-        // ignorar cross-origin ou propriedades inacessíveis e continuar subindo
-      }
+      } catch (e) {}
       if (!w.parent || w.parent === w) break;
       w = w.parent;
     }
@@ -169,7 +170,25 @@ var sortField = 'name', sortAsc = true;
 var currentPage = 1, pageSize = 50;
 
 window.addEventListener('DOMContentLoaded', function () {
-  if (!DEVICE_ID) { showError('Nenhum ID de dispositivo fornecido.'); return; }
+  // Se o nodeId ainda não está disponível, espera postMessage do frame pai (até 3 s)
+  if (!DEVICE_ID) {
+    var pmTimer = setTimeout(function () {
+      if (!DEVICE_ID) showError('Nenhum ID de dispositivo fornecido.');
+    }, 3000);
+    window._pmTimer = pmTimer;
+    return;
+  }
+  loadData(false);
+});
+
+// Recebe nodeId via postMessage enviado pelo onDeviceRefreshEnd do plugin
+window.addEventListener('message', function (evt) {
+  if (!evt.data || evt.data.type !== 'mc-nodeid' || !evt.data.nodeid) return;
+  if (DEVICE_ID) return; // já tem
+  DEVICE_ID = evt.data.nodeid;
+  DATA_URL = '/pluginadmin.ashx?pin=' + PLUGIN_PIN + '&user=1&action=data&nodeid=' + encodeURIComponent(DEVICE_ID);
+  clearTimeout(window._pmTimer);
+  setState('loading');
   loadData(false);
 });
 
