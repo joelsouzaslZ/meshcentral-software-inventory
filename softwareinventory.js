@@ -120,7 +120,9 @@ module.exports.softwareinventory = function (parent) {
 
                 // Estrategia 3: query por tipo no banco
                 if (typeof db.GetAllTypeNodeFiltered === 'function') {
-                    db.GetAllTypeNodeFiltered(['softwares'], nodeId, null, function (err3, docs3) {
+                    // Assinatura: GetAllTypeNodeFiltered(nodes, domain, type, id, func)
+                    // Passar domain vazio (global), type = 'softwares', id = nodeId
+                    db.GetAllTypeNodeFiltered(['softwares'], '', 'softwares', nodeId, function (err3, docs3) {
                         if (!err3 && docs3 && docs3.length > 0) {
                             var raw3 = docs3[0].list || docs3[0].softwares || docs3[0].data || [];
                             if (raw3.length > 0) {
@@ -146,8 +148,8 @@ module.exports.softwareinventory = function (parent) {
                     name: item.name || item.displayName || '',
                     version: item.version || item.displayVersion || '',
                     publisher: item.publisher || item.vendor || item.company || '',
-                    installDate: formatDate(item.installDate || item.date || ''),
-                    installDateRaw: item.installDate || item.date || '',
+                    installDate: formatDate(item.installdate || item.installDate || item.date || ''),
+                    installDateRaw: item.installdate || item.installDate || item.date || '',
                     installLocation: item.installLocation || item.location || item.path || '',
                     installSize: formatSize(item.installSize || item.size || 0),
                     installSizeRaw: parseInt(item.installSize || item.size || 0, 10),
