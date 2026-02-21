@@ -27,13 +27,34 @@ module.exports.softwareinventory = function (parent) {
     obj.exports = ['onDeviceRefreshEnd', 'onAgentMessage'];
 
     // Hook server-side: chamado pelo pluginHandler sempre que um agente envia uma mensagem.
-    // Captura a resposta de 'installedapps', salva no DB e resolve requisição pendente (se houver).
+    // Captura a resposta do console 'installedapps' e resolve requisição pendente (se houver).
     obj.onAgentMessage = function (conn, msg, domain, node) {
-        if (!msg || msg.action !== 'installedapps') return;
-        var nodeId = (node && node._id) ? node._id : (conn && conn.dbNodeKey);
-        if (!nodeId) return;
+        if (!msg) return;
+        // O agente responde ao console com action:'msg', type:'console'
+        // O sessionid que usamos para identificar nossa requisição é 'si-' + nodeId
+        if (msg.action !== 'msg' || msg.type !== 'console') return;
+        if (!msg.sessionid || msg.sessionid.indexOf('si-') !== 0) return;
 
-        var list = msg.list || [];
+        var nodeId = msg.sessionid.slice(3); // remove prefixo 'si-'
+        var pending = obj._pending[nodeId];
+        if (!pending) return;
+
+        clearTimeout(pending.timer);
+        delete obj._pending[nodeId];
+
+        // O agente retorna os apps como JSON string no campo value
+        var list = [];
+        try {
+            var val = msg.value || msg.data || '';
+            if (typeof val === 'string') {
+                // Pode vir como JSON puro ou precedido de texto
+                var start = val.indexOf('[');
+                if (start !== -1) val = val.slice(start);
+                list = JSON.parse(val);
+            } else if (Array.isArray(val)) {
+                list = val;
+            }
+        } catch (e) { list = []; }
 
         // Persiste no banco como sw<nodeId> para requisições futuras (cache)
         var db = obj.meshServer.db;
@@ -41,19 +62,13 @@ module.exports.softwareinventory = function (parent) {
             db.Set({ _id: 'sw' + nodeId, type: 'softwares', list: list, ts: Date.now() }, function () {});
         }
 
-        // Resolve a requisição HTTP pendente, se existir
-        var pending = obj._pending[nodeId];
-        if (pending) {
-            clearTimeout(pending.timer);
-            delete obj._pending[nodeId];
-            var normalized = normalizeList(list);
-            pending.res.json({
-                success: true,
-                source: 'agent-live',
-                count: normalized.length,
-                softwares: normalized
-            });
-        }
+        var normalized = normalizeList(list);
+        pending.res.json({
+            success: true,
+            source: 'agent-live',
+            count: normalized.length,
+            softwares: normalized
+        });
     };
 
     // Inicialização do servidor
@@ -131,11 +146,18 @@ module.exports.softwareinventory = function (parent) {
                             res.json({ success: true, source: 'timeout', count: 0, softwares: [],
                                 message: 'Agente não respondeu em tempo hábil. Tente novamente.' });
                         }
-                    }, 10000)
+                    }, 12000)
                 };
 
                 try {
-                    agentConn.send(JSON.stringify({ action: 'installedapps' }));
+                    // Formato correto: console command ao agente
+                    // O agente responde com {action:'msg', type:'console', value:'[{...}]', sessionid:...}
+                    agentConn.send(JSON.stringify({
+                        action: 'msg',
+                        type: 'console',
+                        value: 'installedapps',
+                        sessionid: 'si-' + nodeId
+                    }));
                 } catch (ex) {
                     clearTimeout(obj._pending[nodeId].timer);
                     delete obj._pending[nodeId];
