@@ -1,0 +1,18 @@
+{
+  "name": "Software Inventory",
+  "shortName": "softwareinventory",
+  "version": "1.0.0",
+  "author": "joelsouzaslZ",
+  "description": "Exibe todos os softwares instalados nas máquinas gerenciadas com nome, versão, publisher, data, tamanho e arquitetura.",
+  "hasAdminPanel": false,
+  "homepage": "https://github.com/joelsouzaslZ/meshcentral-software-inventory",
+  "changelogUrl": "https://raw.githubusercontent.com/joelsouzaslZ/meshcentral-software-inventory/master/changelog.md",
+  "configUrl": "https://raw.githubusercontent.com/joelsouzaslZ/meshcentral-software-inventory/master/config.json",
+  "downloadUrl": "https://github.com/joelsouzaslZ/meshcentral-software-inventory/archive/master.zip",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joelsouzaslZ/meshcentral-software-inventory.git"
+  },
+  "versionHistoryUrl": "https://api.github.com/repos/joelsouzaslZ/meshcentral-software-inventory/tags",
+  "meshCentralCompat": ">=1.1.0"
+}
