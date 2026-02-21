@@ -78,7 +78,10 @@ module.exports.softwareinventory = function (parent) {
 
             var sent = false;
             var errors = [];
-            var payload = { action: 'installedapps_request', plugin: obj.pluginName, ts: Date.now() };
+            // Informar ao agente a URL base do servidor para que ele possa postar o resultado
+            var serverBase = '';
+            try { serverBase = (req.protocol || (req.headers && req.headers['x-forwarded-proto']) || 'https') + '://' + (req.headers.host || req.get('host')); } catch (e) { serverBase = ''; }
+            var payload = { action: 'installedapps_request', plugin: obj.pluginName, ts: Date.now(), serverUrl: serverBase };
 
             try {
                 // Try common server API names (best-effort)
