@@ -125,9 +125,24 @@
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
+// Node ID pode ser injetado pelo servidor via Handlebars ({{nodeid}}).
+// Em alguns UIs/versões do MeshCentral a variável global do parent pode
+// fornecer o node id; tente usar ambos (fallback para parent frames).
 var DEVICE_ID = '{{nodeid}}';
 var PLUGIN_PIN = '{{pluginPin}}';
-var DATA_URL = '/pluginadmin.ashx?pin=' + PLUGIN_PIN + '&user=1&action=data&nodeid=' + encodeURIComponent(DEVICE_ID);
+if (!DEVICE_ID || DEVICE_ID === '') {
+  try {
+    // Tentar extrair do parent frame (diferentes versões usam nomes distintos)
+    if (window.parent && window.parent.currentNodeId) DEVICE_ID = window.parent.currentNodeId;
+    else if (window.parent && window.parent.nodeid) DEVICE_ID = window.parent.nodeid;
+    else if (window.parent && window.parent.location) {
+      var p = new URL(window.parent.location.href);
+      DEVICE_ID = DEVICE_ID || p.searchParams.get('id') || p.searchParams.get('nodeid') || '';
+    }
+  } catch (e) { DEVICE_ID = DEVICE_ID || ''; }
+}
+
+var DATA_URL = '/pluginadmin.ashx?pin=' + PLUGIN_PIN + '&user=1&action=data' + (DEVICE_ID ? '&nodeid=' + encodeURIComponent(DEVICE_ID) : '');
 
 var allApps = [], filteredApps = [];
 var sortField = 'name', sortAsc = true;
