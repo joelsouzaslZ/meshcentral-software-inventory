@@ -2,7 +2,7 @@
   "name": "meshcentral-software-inventory",
   "version": "1.0.0",
   "description": "Plugin de inventário de software instalado para MeshCentral",
-  "main": "index.js",
+  "main": "softwareinventory.js",
   "author": "joelsouzaslZ",
   "license": "MIT",
   "homepage": "https://github.com/joelsouzaslZ/meshcentral-software-inventory",
