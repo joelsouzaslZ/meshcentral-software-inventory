@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -6,715 +6,263 @@
 <title>Software Inventory</title>
 <style>
   :root {
-    --bg: #f4f6f9;
-    --card: #ffffff;
-    --border: #dee2e6;
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --text: #1e293b;
-    --text-muted: #64748b;
-    --badge-bg: #e0e7ff;
-    --badge-text: #3730a3;
-    --danger: #dc2626;
-    --success: #16a34a;
-    --warning: #d97706;
-    --row-hover: #f1f5f9;
-    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --bg: #f4f6f9; --card: #ffffff; --border: #dee2e6;
+    --primary: #2563eb; --primary-hover: #1d4ed8;
+    --text: #1e293b; --text-muted: #64748b;
+    --badge-blue: #e0e7ff; --badge-blue-text: #3730a3;
+    --badge-red: #fee2e2; --badge-red-text: #991b1b;
+    --badge-green: #dcfce7; --badge-green-text: #166534;
+    --row-hover: #f1f5f9; --shadow: 0 1px 3px rgba(0,0,0,.1);
     --radius: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 14px;
-    padding: 16px;
-  }
-
-  /* ── Header ── */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-  .header h1 {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    flex: 1;
-  }
-  .stat-pill {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: 13px;
-    color: var(--text-muted);
-    font-weight: 500;
-    white-space: nowrap;
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; padding: 16px; }
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 18px; font-weight: 700; flex: 1; }
+  .stat-pill { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--text-muted); font-weight: 500; white-space: nowrap; }
   .stat-pill strong { color: var(--primary); }
-
-  /* ── Toolbar ── */
-  .toolbar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .search-wrap {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-  }
-  .search-wrap svg {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    pointer-events: none;
-  }
-  .search-input {
-    width: 100%;
-    padding: 8px 12px 8px 34px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 14px;
-    background: var(--card);
-    outline: none;
-    transition: border-color .15s;
-  }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 180px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  .search-input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--card); outline: none; }
   .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
-
-  .filter-select {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 14px;
-    background: var(--card);
-    cursor: pointer;
-    outline: none;
-    min-width: 140px;
-  }
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: background .15s, opacity .15s;
-    white-space: nowrap;
-  }
+  select.flt { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--card); cursor: pointer; outline: none; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: background .15s; white-space: nowrap; }
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover { background: var(--primary-hover); }
   .btn-outline { background: var(--card); color: var(--text); border: 1px solid var(--border); }
   .btn-outline:hover { background: var(--row-hover); }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
-
-  /* ── Table ── */
-  .table-wrap {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    overflow: auto;
-  }
+  .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: auto; }
   table { width: 100%; border-collapse: collapse; }
   thead { position: sticky; top: 0; z-index: 2; }
-  th {
-    background: #f8fafc;
-    border-bottom: 2px solid var(--border);
-    padding: 10px 14px;
-    text-align: left;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-  }
+  th { background: #f8fafc; border-bottom: 2px solid var(--border); padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; user-select: none; white-space: nowrap; }
   th:hover { color: var(--primary); }
-  th .sort-arrow { margin-left: 4px; opacity: .4; }
-  th.sorted .sort-arrow { opacity: 1; color: var(--primary); }
-  td {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-    max-width: 260px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  th.sorted { color: var(--primary); }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: var(--row-hover); }
-
-  /* ── App Icon cell ── */
-  .icon-name {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 280px;
-  }
-  .app-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    object-fit: contain;
-    flex-shrink: 0;
-    background: #fff;
-    border: 1px solid var(--border);
-    padding: 2px;
-  }
-  .app-name {
-    font-weight: 600;
-    color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .app-ver {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 1px;
-  }
-
-  /* ── Badges ── */
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .badge-arch { background: var(--badge-bg); color: var(--badge-text); }
-  .badge-sys { background: #fee2e2; color: #991b1b; }
-  .badge-user { background: #dcfce7; color: #166534; }
-
-  /* ── States ── */
-  .state-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 64px 24px;
-    gap: 12px;
-    color: var(--text-muted);
-  }
-  .state-box svg { opacity: .35; }
-  .state-box p { font-size: 15px; font-weight: 500; }
-  .state-box small { font-size: 12px; }
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-  }
+  .icon-cell { display: flex; align-items: center; gap: 9px; max-width: 260px; }
+  .app-icon { width: 26px; height: 26px; border-radius: 5px; object-fit: contain; flex-shrink: 0; background: #fff; border: 1px solid var(--border); padding: 2px; }
+  .app-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .app-ver { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .b-arch { background: var(--badge-blue); color: var(--badge-blue-text); }
+  .b-sys { background: var(--badge-red); color: var(--badge-red-text); }
+  .b-usr { background: var(--badge-green); color: var(--badge-green-text); }
+  .state-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 24px; gap: 12px; color: var(--text-muted); }
+  .spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Paginação ── */
-  .pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--text-muted);
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .page-btns { display: flex; gap: 6px; }
-  .page-btn {
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--card);
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-  }
-  .page-btn:hover { background: var(--row-hover); }
-  .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .page-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-  /* ── Toast ── */
-  .toast-wrap {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .toast {
-    background: var(--text);
-    color: #fff;
-    padding: 10px 18px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    box-shadow: 0 4px 12px rgba(0,0,0,.25);
-    animation: fadeIn .2s ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-  /* ── Tooltip ── */
-  [title] { cursor: help; }
+  .pager { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); flex-wrap: wrap; gap: 8px; }
+  .pager-btns { display: flex; gap: 5px; }
+  .pager-btn { padding: 3px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--card); cursor: pointer; font-size: 12px; color: var(--text); }
+  .pager-btn:hover { background: var(--row-hover); }
+  .pager-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .pager-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .toast-wrap { position: fixed; bottom: 18px; right: 18px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: #1e293b; color: #fff; padding: 9px 16px; border-radius: var(--radius); font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,.25); animation: fi .2s ease; }
+  @keyframes fi { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
 </style>
 </head>
 <body>
-
 <div id="app">
-
-  <!-- Header -->
   <div class="header">
-    <h1>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;color:var(--primary);margin-right:6px">
-        <rect x="2" y="3" width="20" height="4" rx="2"/><rect x="2" y="10" width="20" height="4" rx="2"/>
-        <rect x="2" y="17" width="20" height="4" rx="2"/>
-      </svg>
-      Software Instalado
-    </h1>
-    <div class="stat-pill" id="statTotal">
-      Total: <strong id="cntTotal">—</strong>
-    </div>
-    <div class="stat-pill" id="statShowing" style="display:none">
-      Exibindo: <strong id="cntShowing">—</strong>
-    </div>
-    <div class="stat-pill" id="statTs" style="display:none">
-      Atualizado: <strong id="tsValue">—</strong>
-    </div>
+    <h1>&#128220; Software Instalado</h1>
+    <div class="stat-pill">Total: <strong id="cntTotal"></strong></div>
+    <div class="stat-pill" id="statShow" style="display:none">Filtrado: <strong id="cntShow"></strong></div>
+    <div class="stat-pill" id="statTs" style="display:none">Atualizado: <strong id="tsVal"></strong></div>
   </div>
 
-  <!-- Toolbar -->
   <div class="toolbar">
     <div class="search-wrap">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input id="searchInput" class="search-input" type="text"
-        placeholder="Buscar por nome, publisher, versão…" oninput="applyFilters()">
+      <span class="search-icon">&#128269;</span>
+      <input id="searchInput" class="search-input" type="text" placeholder="Buscar por nome, publisher ou versão" oninput="applyFilters()">
     </div>
-
-    <select id="filterArch" class="filter-select" onchange="applyFilters()">
+    <select id="fltArch" class="flt" onchange="applyFilters()">
       <option value="">Todas arquiteturas</option>
       <option value="x64">x64 (64-bit)</option>
       <option value="x86">x86 (32-bit)</option>
     </select>
-
-    <select id="filterType" class="filter-select" onchange="applyFilters()">
+    <select id="fltType" class="flt" onchange="applyFilters()">
       <option value="">Todos os tipos</option>
       <option value="user">Usuário</option>
       <option value="system">Sistema</option>
     </select>
-
-    <button class="btn btn-outline" onclick="exportCSV()" id="btnExport" disabled>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      Exportar CSV
-    </button>
-
-    <button class="btn btn-primary" onclick="loadData(true)" id="btnRefresh">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-      </svg>
-      Atualizar
-    </button>
+    <button class="btn btn-outline" onclick="exportCSV()" id="btnExport" disabled>&#8659; CSV</button>
+    <button class="btn btn-primary" onclick="loadData(true)" id="btnRefresh">&#8635; Atualizar</button>
   </div>
 
-  <!-- Table -->
   <div class="table-wrap">
-    <div id="stateLoading" class="state-box">
-      <div class="spinner"></div>
-      <p>Consultando dispositivo…</p>
-      <small>Isso pode levar até 30 segundos</small>
-    </div>
-    <div id="stateError" class="state-box" style="display:none">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <p id="errMsg">Erro ao carregar dados</p>
-      <small>Verifique se o dispositivo está online e o agent está conectado.</small>
-    </div>
-    <div id="stateEmpty" class="state-box" style="display:none">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      </svg>
-      <p>Nenhum software encontrado</p>
-      <small id="emptyMsg">O dispositivo não reportou softwares instalados.</small>
-    </div>
+    <div id="stateLoading" class="state-box"><div class="spinner"></div><p>Consultando dispositivo</p></div>
+    <div id="stateError" class="state-box" style="display:none"><p>&#9888;</p><p id="errMsg">Erro ao carregar dados</p><small>Verifique se o dispositivo está online.</small></div>
+    <div id="stateEmpty" class="state-box" style="display:none"><p>&#128230;</p><p id="emptyMsg">Nenhum software encontrado.</p></div>
     <table id="mainTable" style="display:none">
-      <thead>
-        <tr>
-          <th onclick="sortBy('name')" id="th-name">
-            Aplicativo <span class="sort-arrow" id="arr-name">↕</span>
-          </th>
-          <th onclick="sortBy('publisher')" id="th-publisher">
-            Publisher <span class="sort-arrow" id="arr-publisher">↕</span>
-          </th>
-          <th onclick="sortBy('installDate')" id="th-installDate">
-            Data Instalação <span class="sort-arrow" id="arr-installDate">↕</span>
-          </th>
-          <th onclick="sortBy('installSizeRaw')" id="th-installSizeRaw">
-            Tamanho <span class="sort-arrow" id="arr-installSizeRaw">↕</span>
-          </th>
-          <th onclick="sortBy('architecture')" id="th-architecture">
-            Arch <span class="sort-arrow" id="arr-architecture">↕</span>
-          </th>
-          <th>Tipo</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th onclick="sortBy('name')" id="th-name">Aplicativo <span id="arr-name"></span></th>
+        <th onclick="sortBy('publisher')" id="th-publisher">Publisher <span id="arr-publisher"></span></th>
+        <th onclick="sortBy('installDate')" id="th-installDate">Data Instalação <span id="arr-installDate"></span></th>
+        <th onclick="sortBy('installSizeRaw')" id="th-installSizeRaw">Tamanho <span id="arr-installSizeRaw"></span></th>
+        <th onclick="sortBy('architecture')" id="th-architecture">Arch <span id="arr-architecture"></span></th>
+        <th>Tipo</th>
+      </tr></thead>
       <tbody id="tableBody"></tbody>
     </table>
-    <div class="pagination" id="pagination" style="display:none">
-      <div id="pageInfo">Página 1 de 1</div>
-      <div class="page-btns">
-        <button class="page-btn" id="btnPrev" onclick="changePage(-1)">← Anterior</button>
-        <button class="page-btn" id="btnNext" onclick="changePage(1)">Próxima →</button>
+    <div class="pager" id="pager" style="display:none">
+      <div id="pageInfo"></div>
+      <div class="pager-btns">
+        <button class="pager-btn" id="btnPrev" onclick="changePage(-1)">&#8592; Anterior</button>
+        <button class="pager-btn" id="btnNext" onclick="changePage(1)">Próxima &#8594;</button>
       </div>
-      <div>
-        <select class="filter-select" id="pageSizeSelect" onchange="changePageSize()" style="min-width:80px">
-          <option value="25">25 / pág</option>
-          <option value="50" selected>50 / pág</option>
-          <option value="100">100 / pág</option>
-          <option value="250">250 / pág</option>
-        </select>
-      </div>
+      <select class="flt" id="pageSz" onchange="changePageSize()" style="min-width:80px">
+        <option value="25">25/pág</option>
+        <option value="50" selected>50/pág</option>
+        <option value="100">100/pág</option>
+        <option value="250">250/pág</option>
+      </select>
     </div>
   </div>
-
-  <!-- Toasts -->
-  <div class="toast-wrap" id="toastWrap"></div>
-
 </div>
+<div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ── Estado global ──────────────────────────────────────────────────────────
-const DEVICE_ID = (function() {
-  const p = new URLSearchParams(window.location.search);
-  return p.get('id') || '';
-})();
+var DEVICE_ID = '{{nodeid}}';
+var PLUGIN_PIN = '{{pluginPin}}';
+var DATA_URL = '/pluginadmin.ashx?pin=' + PLUGIN_PIN + '&user=1&action=data&nodeid=' + encodeURIComponent(DEVICE_ID);
 
-const PLUGIN_ROOT = '/plugins/softwareinventory';
+var allApps = [], filteredApps = [];
+var sortField = 'name', sortAsc = true;
+var currentPage = 1, pageSize = 50;
 
-let allApps = [];        // lista completa normalizada
-let filteredApps = [];   // após busca/filtros
-let sortField = 'name';
-let sortAsc = true;
-let currentPage = 1;
-let pageSize = 50;
-
-// ── Bootstrap ──────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', function() {
-  if (!DEVICE_ID) {
-    showError('Nenhum ID de dispositivo fornecido na URL.');
-    return;
-  }
+window.addEventListener('DOMContentLoaded', function () {
+  if (!DEVICE_ID) { showError('Nenhum ID de dispositivo fornecido.'); return; }
   loadData(false);
 });
 
-// ── Carregar dados ─────────────────────────────────────────────────────────
-function loadData(forceRefresh) {
+function loadData(force) {
   setState('loading');
-  const btn = document.getElementById('btnRefresh');
-  btn.disabled = true;
-
-  const url = PLUGIN_ROOT + '/device/data?id=' + encodeURIComponent(DEVICE_ID)
-    + (forceRefresh ? '&refresh=1' : '');
-
+  document.getElementById('btnRefresh').disabled = true;
+  var url = DATA_URL + (force ? '&refresh=1' : '');
   fetch(url)
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(json) {
-      if (!json.success) throw new Error(json.error || 'Resposta inválida do servidor');
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (json) {
+      if (!json.success) throw new Error(json.error || 'Resposta inválida');
       allApps = json.softwares || [];
-
-      // Atualizar cabeçalho de timestamp
       if (json.timestamp) {
-        document.getElementById('tsValue').textContent = formatTs(json.timestamp);
+        document.getElementById('tsVal').textContent = new Date(json.timestamp).toLocaleString('pt-BR');
         document.getElementById('statTs').style.display = '';
       }
-
-      if (allApps.length === 0) {
-        setState('empty');
-        updateStats(0, 0);
-      } else {
-        applyFilters();
-        document.getElementById('btnExport').disabled = false;
-        if (json.source === 'cache') {
-          toast('Dados do cache local (atualize para dados novos)');
-        }
-      }
+      if (allApps.length === 0) { setState('empty'); updateStats(0, 0); }
+      else { applyFilters(); document.getElementById('btnExport').disabled = false; }
+      if (json.source === 'empty') toast('Nenhum dado de software encontrado no banco do MeshCentral ainda. Aguarde a sincronização do agent.');
     })
-    .catch(function(err) {
-      showError(err.message);
-    })
-    .finally(function() {
-      btn.disabled = false;
-    });
+    .catch(function (err) { showError(err.message); })
+    .finally(function () { document.getElementById('btnRefresh').disabled = false; });
 }
 
-// ── Filtros e ordenação ────────────────────────────────────────────────────
 function applyFilters() {
-  const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  const arch = document.getElementById('filterArch').value;
-  const type = document.getElementById('filterType').value;
-
-  filteredApps = allApps.filter(function(app) {
-    if (q) {
-      const haystack = (app.name + ' ' + app.publisher + ' ' + app.version).toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    if (arch && app.architecture !== arch) return false;
-    if (type === 'system' && !app.systemComponent) return false;
-    if (type === 'user' && app.systemComponent) return false;
+  var q = document.getElementById('searchInput').value.toLowerCase().trim();
+  var arch = document.getElementById('fltArch').value;
+  var type = document.getElementById('fltType').value;
+  filteredApps = allApps.filter(function (a) {
+    if (q && !(a.name + ' ' + a.publisher + ' ' + a.version).toLowerCase().includes(q)) return false;
+    if (arch && a.architecture !== arch) return false;
+    if (type === 'system' && !a.systemComponent) return false;
+    if (type === 'user' && a.systemComponent) return false;
     return true;
   });
-
-  sortApps();
-  currentPage = 1;
-  renderTable();
+  sortApps(); currentPage = 1; renderTable();
   updateStats(allApps.length, filteredApps.length);
-
-  if (filteredApps.length === 0 && allApps.length > 0) {
-    setState('empty');
-    document.getElementById('emptyMsg').textContent =
-      'Nenhum resultado para os filtros aplicados.';
-  } else if (filteredApps.length > 0) {
-    setState('table');
-  }
+  if (filteredApps.length === 0 && allApps.length > 0) { setState('empty'); document.getElementById('emptyMsg').textContent = 'Nenhum resultado para os filtros aplicados.'; }
+  else if (filteredApps.length > 0) setState('table');
 }
 
 function sortBy(field) {
-  if (sortField === field) {
-    sortAsc = !sortAsc;
-  } else {
-    sortField = field;
-    sortAsc = true;
-  }
-  // Atualizar indicadores visuais
-  document.querySelectorAll('th').forEach(function(th) { th.classList.remove('sorted'); });
-  const th = document.getElementById('th-' + field);
-  if (th) th.classList.add('sorted');
-  document.querySelectorAll('.sort-arrow').forEach(function(el) { el.textContent = '↕'; });
-  const arr = document.getElementById('arr-' + field);
-  if (arr) arr.textContent = sortAsc ? '↑' : '↓';
-
-  sortApps();
-  renderTable();
+  if (sortField === field) sortAsc = !sortAsc; else { sortField = field; sortAsc = true; }
+  document.querySelectorAll('th').forEach(function (t) { t.classList.remove('sorted'); });
+  var th = document.getElementById('th-' + field); if (th) th.classList.add('sorted');
+  document.querySelectorAll('[id^="arr-"]').forEach(function (e) { e.textContent = ''; });
+  var arr = document.getElementById('arr-' + field); if (arr) arr.textContent = sortAsc ? '' : '';
+  sortApps(); renderTable();
 }
 
 function sortApps() {
-  filteredApps.sort(function(a, b) {
-    let va = a[sortField] || '';
-    let vb = b[sortField] || '';
-    if (sortField === 'installSizeRaw') {
-      va = parseInt(va, 10) || 0;
-      vb = parseInt(vb, 10) || 0;
-      return sortAsc ? va - vb : vb - va;
-    }
-    va = String(va).toLowerCase();
-    vb = String(vb).toLowerCase();
+  filteredApps.sort(function (a, b) {
+    var va = a[sortField] || '', vb = b[sortField] || '';
+    if (sortField === 'installSizeRaw') return sortAsc ? (va - vb) : (vb - va);
+    va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
     if (va < vb) return sortAsc ? -1 : 1;
     if (va > vb) return sortAsc ? 1 : -1;
     return 0;
   });
 }
 
-// ── Renderizar tabela ──────────────────────────────────────────────────────
 function renderTable() {
-  const tbody = document.getElementById('tableBody');
-  const totalPages = Math.max(1, Math.ceil(filteredApps.length / pageSize));
+  var tbody = document.getElementById('tableBody');
+  var totalPages = Math.max(1, Math.ceil(filteredApps.length / pageSize));
   if (currentPage > totalPages) currentPage = totalPages;
-
-  const start = (currentPage - 1) * pageSize;
-  const slice = filteredApps.slice(start, start + pageSize);
-
-  tbody.innerHTML = slice.map(function(app) {
-    const iconSrc = getIcon(app);
-    const archBadge = app.architecture
-      ? '<span class="badge badge-arch">' + esc(app.architecture) + '</span>'
-      : '<span style="color:var(--text-muted)">—</span>';
-    const typeBadge = app.systemComponent
-      ? '<span class="badge badge-sys">Sistema</span>'
-      : '<span class="badge badge-user">Usuário</span>';
-    const installLoc = app.installLocation
-      ? ' title="' + esc(app.installLocation) + '"'
-      : '';
+  var start = (currentPage - 1) * pageSize;
+  var slice = filteredApps.slice(start, start + pageSize);
+  var icon = '/pluginadmin.ashx?pin=' + PLUGIN_PIN + '&user=1&include=icons/default.png';
+  tbody.innerHTML = slice.map(function (a) {
+    var archBadge = a.architecture ? '<span class="badge b-arch">' + esc(a.architecture) + '</span>' : '<span style="color:var(--text-muted)"></span>';
+    var typeBadge = a.systemComponent ? '<span class="badge b-sys">Sistema</span>' : '<span class="badge b-usr">Usuário</span>';
     return '<tr>'
-      + '<td>'
-      + '  <div class="icon-name">'
-      + '    <img class="app-icon" src="' + iconSrc + '" alt="" onerror="this.src=\'' + PLUGIN_ROOT + '/icons/default.png\'">'
-      + '    <div>'
-      + '      <div class="app-name" title="' + esc(app.name) + '">' + esc(truncate(app.name, 40)) + '</div>'
-      + '      <div class="app-ver">' + esc(app.version || '—') + '</div>'
-      + '    </div>'
-      + '  </div>'
-      + '</td>'
-      + '<td title="' + esc(app.publisher) + '">' + esc(truncate(app.publisher, 35) || '—') + '</td>'
-      + '<td' + installLoc + '>' + esc(app.installDate || '—') + '</td>'
-      + '<td>' + esc(app.installSize || '—') + '</td>'
+      + '<td><div class="icon-cell"><img class="app-icon" src="' + icon + '" alt="" onerror="this.style.display=\'none\'">'
+      + '<div><div class="app-name" title="' + esc(a.name) + '">' + esc(trunc(a.name,42)) + '</div>'
+      + '<div class="app-ver">' + esc(a.version || '') + '</div></div></div></td>'
+      + '<td title="' + esc(a.publisher) + '">' + esc(trunc(a.publisher, 36) || '') + '</td>'
+      + '<td>' + esc(a.installDate || '') + '</td>'
+      + '<td>' + esc(a.installSize || '') + '</td>'
       + '<td>' + archBadge + '</td>'
       + '<td>' + typeBadge + '</td>'
       + '</tr>';
   }).join('');
-
-  // Paginação
-  const pagEl = document.getElementById('pagination');
+  var pager = document.getElementById('pager');
   if (totalPages > 1) {
-    pagEl.style.display = '';
-    document.getElementById('pageInfo').textContent =
-      'Página ' + currentPage + ' de ' + totalPages
-      + ' (' + filteredApps.length + ' itens)';
+    pager.style.display = '';
+    document.getElementById('pageInfo').textContent = 'Página ' + currentPage + ' de ' + totalPages + ' (' + filteredApps.length + ' itens)';
     document.getElementById('btnPrev').disabled = currentPage <= 1;
     document.getElementById('btnNext').disabled = currentPage >= totalPages;
-  } else {
-    pagEl.style.display = 'none';
-  }
+  } else { pager.style.display = 'none'; }
 }
 
-function changePage(delta) {
-  currentPage += delta;
-  renderTable();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+function changePage(d) { currentPage += d; renderTable(); }
+function changePageSize() { pageSize = parseInt(document.getElementById('pageSz').value, 10); currentPage = 1; renderTable(); }
 
-function changePageSize() {
-  pageSize = parseInt(document.getElementById('pageSizeSelect').value, 10);
-  currentPage = 1;
-  renderTable();
-}
-
-// ── Stats ──────────────────────────────────────────────────────────────────
 function updateStats(total, showing) {
   document.getElementById('cntTotal').textContent = total;
-  document.getElementById('cntShowing').textContent = showing;
-  const showingEl = document.getElementById('statShowing');
-  if (showing !== total) {
-    showingEl.style.display = '';
-  } else {
-    showingEl.style.display = 'none';
-  }
+  document.getElementById('cntShow').textContent = showing;
+  document.getElementById('statShow').style.display = showing !== total ? '' : 'none';
 }
 
-// ── Exportar CSV ───────────────────────────────────────────────────────────
 function exportCSV() {
   if (!filteredApps.length) return;
-  const headers = ['Nome','Versão','Publisher','Data Instalação','Tamanho','Arquitetura','Tipo','Local de Instalação'];
-  const rows = filteredApps.map(function(a) {
-    return [a.name, a.version, a.publisher, a.installDate,
-            a.installSize, a.architecture,
-            a.systemComponent ? 'Sistema' : 'Usuário',
-            a.installLocation]
-      .map(function(v) { return '"' + (v || '').replace(/"/g, '""') + '"'; })
-      .join(',');
+  var hdrs = ['Nome','Versão','Publisher','Data Instalação','Tamanho','Arquitetura','Tipo','Local de Instalação'];
+  var rows = filteredApps.map(function (a) {
+    return [a.name,a.version,a.publisher,a.installDate,a.installSize,a.architecture,a.systemComponent?'Sistema':'Usuário',a.installLocation]
+      .map(function (v) { return '"' + (v||'').replace(/"/g,'""') + '"'; }).join(',');
   });
-  const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'software-inventory-' + DEVICE_ID.slice(-6) + '-' + datestamp() + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('CSV exportado com ' + filteredApps.length + ' entradas');
+  var blob = new Blob(['\uFEFF' + hdrs.join(',') + '\n' + rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url;
+  a.download = 'software-inventory-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado com ' + filteredApps.length + ' itens');
 }
 
-// ── Estado da UI ───────────────────────────────────────────────────────────
-function setState(state) {
-  document.getElementById('stateLoading').style.display = state === 'loading' ? '' : 'none';
-  document.getElementById('stateError').style.display   = state === 'error'   ? '' : 'none';
-  document.getElementById('stateEmpty').style.display   = state === 'empty'   ? '' : 'none';
-  document.getElementById('mainTable').style.display    = state === 'table'   ? ''  : 'none';
+function setState(s) {
+  document.getElementById('stateLoading').style.display = s==='loading' ? '' : 'none';
+  document.getElementById('stateError').style.display   = s==='error'   ? '' : 'none';
+  document.getElementById('stateEmpty').style.display   = s==='empty'   ? '' : 'none';
+  document.getElementById('mainTable').style.display    = s==='table'   ? '' : 'none';
 }
-
-function showError(msg) {
-  setState('error');
-  document.getElementById('errMsg').textContent = msg;
-}
-
-// ── Ícone do app ───────────────────────────────────────────────────────────
-function getIcon(app) {
-  // Tenta mapear ícone por nome de publisher conhecido
-  const pub = (app.publisher || '').toLowerCase();
-  const name = (app.name || '').toLowerCase();
-  const knownIcons = {
-    'microsoft': 'microsoft',
-    'google': 'google',
-    'mozilla': 'mozilla',
-    'adobe': 'adobe',
-    'apple': 'apple',
-    'oracle': 'oracle',
-    'zoom': 'zoom',
-    'slack': 'slack',
-    'discord': 'discord',
-    'vlc': 'vlc',
-    '7-zip': '7zip',
-    'winrar': 'winrar',
-    'notepad++': 'notepad',
-    'git': 'git',
-    'visual studio': 'visualstudio',
-    'vscode': 'vscode',
-    'python': 'python',
-    'node.js': 'nodejs'
-  };
-  for (const k in knownIcons) {
-    if (pub.includes(k) || name.includes(k)) {
-      return PLUGIN_ROOT + '/icons/' + knownIcons[k] + '.png';
-    }
-  }
-  return PLUGIN_ROOT + '/icons/default.png';
-}
-
-// ── Utilitários ────────────────────────────────────────────────────────────
-function esc(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function truncate(str, n) {
-  if (!str) return '';
-  return str.length > n ? str.slice(0, n) + '…' : str;
-}
-
-function formatTs(ts) {
-  const d = new Date(ts);
-  return d.toLocaleString('pt-BR');
-}
-
-function datestamp() {
-  const d = new Date();
-  return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2);
-}
-
-function toast(msg, duration) {
-  const wrap = document.getElementById('toastWrap');
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(function() { el.remove(); }, duration || 3500);
+function showError(msg) { setState('error'); document.getElementById('errMsg').textContent = msg; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function trunc(s,n) { s=s||''; return s.length>n ? s.slice(0,n)+'' : s; }
+function toast(msg) {
+  var w = document.getElementById('toastWrap'), el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg; w.appendChild(el);
+  setTimeout(function(){el.remove();}, 3500);
 }
 </script>
 </body>
