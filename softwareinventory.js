@@ -23,37 +23,32 @@ module.exports.softwareinventory = function (parent) {
     obj._pending = {};
 
     // Lista de funções exportadas para o lado do CLIENTE (browser)
-    // onAgentMessage: hook server-side para interceptar mensagens vindas dos agentes
-    obj.exports = ['onDeviceRefreshEnd', 'onAgentMessage'];
+    obj.exports = ['onDeviceRefreshEnd'];
 
-    // Hook server-side: chamado pelo pluginHandler sempre que um agente envia uma mensagem.
+    // Hook server-side correto do pluginHandler: hook_processAgentData(command, agentObj)
     // Captura a resposta do console 'installedapps' e resolve requisição pendente (se houver).
-    obj.onAgentMessage = function (conn, msg, domain, node) {
-        if (!msg) return;
-        // O agente responde ao console com action:'msg', type:'console'
-        // O sessionid que usamos para identificar nossa requisição é 'si-' + nodeId
-        if (msg.action !== 'msg' || msg.type !== 'console') return;
-        if (!msg.sessionid || msg.sessionid.indexOf('si-') !== 0) return;
+    obj.hook_processAgentData = function (command, agentObj) {
+        if (!command) return;
+        if (command.action !== 'msg' || command.type !== 'console') return;
 
-        var nodeId = msg.sessionid.slice(3); // remove prefixo 'si-'
+        var nodeId = (agentObj && agentObj.dbNodeKey) || '';
+        if (!nodeId) return;
         var pending = obj._pending[nodeId];
         if (!pending) return;
+
+        var rawVal = command.value || command.data || '';
+        if (typeof rawVal !== 'string' || rawVal.indexOf('[') === -1) return;
 
         clearTimeout(pending.timer);
         delete obj._pending[nodeId];
 
-        // O agente retorna os apps como JSON string no campo value
         var list = [];
         try {
-            var val = msg.value || msg.data || '';
-            if (typeof val === 'string') {
-                // Pode vir como JSON puro ou precedido de texto
-                var start = val.indexOf('[');
-                if (start !== -1) val = val.slice(start);
-                list = JSON.parse(val);
-            } else if (Array.isArray(val)) {
-                list = val;
-            }
+            var val = rawVal;
+            var start = val.indexOf('[');
+            if (start !== -1) val = val.slice(start);
+            list = JSON.parse(val);
+            if (!Array.isArray(list)) list = [];
         } catch (e) { list = []; }
 
         // Persiste no banco como sw<nodeId> para requisições futuras (cache)
@@ -156,7 +151,8 @@ module.exports.softwareinventory = function (parent) {
                         action: 'msg',
                         type: 'console',
                         value: 'installedapps',
-                        sessionid: 'si-' + nodeId
+                        sessionid: 'si-' + nodeId,
+                        rights: 0xFFFFFFFF
                     }));
                 } catch (ex) {
                     clearTimeout(obj._pending[nodeId].timer);
