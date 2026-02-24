@@ -21,30 +21,53 @@ module.exports.softwareinventory = function (parent) {
 
     // Mapa de requisições aguardando resposta ao vivo do agente { nodeId -> {res, timer} }
     obj._pending = {};
+    // Mapa de requisições de desinstalação pendentes { sessionKey -> {res, timer} }
+    obj._pendingUninstall = {};
 
     // Lista de funções exportadas para o lado do CLIENTE (browser)
     obj.exports = ['onDeviceRefreshEnd'];
 
     // Hook server-side correto do pluginHandler: hook_processAgentData(command, agentObj)
-    // Captura a resposta do console 'installedapps' e resolve requisição pendente (se houver).
+    // Captura respostas do agente para installedapps e uninstallapplication.
     obj.hook_processAgentData = function (command, agentObj) {
         if (!command) return;
         if (command.action !== 'msg' || command.type !== 'console') return;
 
         var nodeId = (agentObj && agentObj.dbNodeKey) || '';
         if (!nodeId) return;
+
+        var sessionid = command.sessionid || '';
+        var rawVal = command.value || command.data || '';
+
+        // --- Resposta de desinstalação (sessionid com prefixo 'su-') ---
+        if (sessionid && sessionid.indexOf('su-') === 0) {
+            var sessionKey = sessionid.slice(3);
+            var pu = obj._pendingUninstall[sessionKey];
+            if (!pu) return;
+            clearTimeout(pu.timer);
+            delete obj._pendingUninstall[sessionKey];
+            // Invalida o cache do node para forçar nova coleta na próxima visita
+            var dbU = obj.meshServer.db;
+            if (dbU && typeof dbU.Remove === 'function') {
+                dbU.Remove('sw' + nodeId, function () {});
+            }
+            pu.res.json({ success: true, message: rawVal || 'Comando de desinstalação enviado ao agente.' });
+            return;
+        }
+
+        // --- Resposta de installedapps (JSON array) ---
         var pending = obj._pending[nodeId];
         if (!pending) return;
 
-        var rawVal = command.value || command.data || '';
-        if (typeof rawVal !== 'string' || rawVal.indexOf('[') === -1) return;
+        var rawValIA = command.value || command.data || '';
+        if (typeof rawValIA !== 'string' || rawValIA.indexOf('[') === -1) return;
 
         clearTimeout(pending.timer);
         delete obj._pending[nodeId];
 
         var list = [];
         try {
-            var val = rawVal;
+            var val = rawValIA;
             var start = val.indexOf('[');
             if (start !== -1) val = val.slice(start);
             list = JSON.parse(val);
@@ -73,7 +96,7 @@ module.exports.softwareinventory = function (parent) {
     // termina de carregar. Registra a aba "Software" e injeta o iframe.
     obj.onDeviceRefreshEnd = function () {
         pluginHandler.registerPluginTab({
-            tabTitle: 'Software',
+            tabTitle: 'Programas',
             tabId: 'pluginSoftwareInventory'
         });
 
@@ -160,6 +183,50 @@ module.exports.softwareinventory = function (parent) {
                     res.json({ success: false, error: 'Falha ao enviar comando ao agente: ' + ex.message, softwares: [] });
                 }
             });
+            return;
+        }
+
+        // Endpoint de desinstalação: envia uninstallapplication ao agente e aguarda resposta
+        if (req.query.action === 'uninstall') {
+            var nodeIdU = req.query.nodeid;
+            var appName = req.query.name ? decodeURIComponent(req.query.name) : '';
+            if (!nodeIdU) return res.json({ success: false, error: 'nodeid ausente' });
+            if (!appName)  return res.json({ success: false, error: 'name ausente' });
+
+            var wsagentsU = obj.meshServer.webserver && obj.meshServer.webserver.wsagents;
+            var agentConnU = wsagentsU && (wsagentsU[nodeIdU] || wsagentsU['node/' + nodeIdU]);
+
+            if (!agentConnU || typeof agentConnU.send !== 'function') {
+                return res.json({ success: false, error: 'Agente offline ou inatingível.' });
+            }
+
+            // Chave única para essa operação de desinstalação
+            var sessionKey = nodeIdU + ':' + Date.now();
+            obj._pendingUninstall[sessionKey] = {
+                res: res,
+                timer: setTimeout(function () {
+                    if (obj._pendingUninstall[sessionKey]) {
+                        delete obj._pendingUninstall[sessionKey];
+                        res.json({ success: false, error: 'Agente não confirmou a desinstalação. O processo pode ter iniciado mesmo assim.' });
+                    }
+                }, 20000)
+            };
+
+            try {
+                // Escapa aspas no nome do aplicativo para o console do agente
+                var safeName = appName.replace(/"/g, '\\"');
+                agentConnU.send(JSON.stringify({
+                    action: 'msg',
+                    type: 'console',
+                    value: 'uninstallapplication "' + safeName + '"',
+                    sessionid: 'su-' + sessionKey,
+                    rights: 0xFFFFFFFF
+                }));
+            } catch (ex) {
+                clearTimeout(obj._pendingUninstall[sessionKey].timer);
+                delete obj._pendingUninstall[sessionKey];
+                res.json({ success: false, error: 'Falha ao enviar comando: ' + ex.message });
+            }
             return;
         }
 

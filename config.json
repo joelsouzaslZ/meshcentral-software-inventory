@@ -1,9 +1,9 @@
 {
   "name": "Software Inventory",
   "shortName": "softwareinventory",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "joelsouzaslZ",
-  "description": "Exibe todos os softwares instalados nas máquinas gerenciadas com nome, versão, publisher, data, tamanho e arquitetura.",
+  "description": "Exibe todos os softwares instalados nas máquinas gerenciadas. Suporta desinstalação remota.",
   "hasAdminPanel": false,
   "homepage": "https://github.com/joelsouzaslZ/meshcentral-software-inventory",
   "changelogUrl": "https://raw.githubusercontent.com/joelsouzaslZ/meshcentral-software-inventory/master/changelog.md",

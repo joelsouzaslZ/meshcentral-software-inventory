@@ -1,6 +1,6 @@
 {
   "name": "meshcentral-software-inventory",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Plugin de inventário de software instalado para MeshCentral",
   "main": "softwareinventory.js",
   "author": "joelsouzaslZ",
@@ -14,8 +14,8 @@
   "meshcentral": {
     "pluginName": "softwareinventory",
     "displayName": "Software Inventory",
-    "description": "Exibe todos os aplicativos instalados nas máquinas gerenciadas com ícones, versões e informações detalhadas",
-    "version": "1.0.0",
+    "description": "Exibe todos os aplicativos instalados nas máquinas gerenciadas com ícones, versões e informações detalhadas. Permite desinstalar aplicativos remotamente.",
+    "version": "1.1.0",
     "author": "joelsouzaslZ",
     "homepage": "https://github.com/joelsouzaslZ/meshcentral-software-inventory",
     "hasAdminPanel": false,
