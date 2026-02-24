@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2026-02-23
+### Corrigido
+- Escape HTML invertido no `onclick` do botão Desinstalar — `esc(JSON.stringify(name))` no lugar de `JSON.stringify(esc(name))`, que causava `SyntaxError: Unexpected end of input` ao clicar em desinstalar
+- `displayName` alterado para `"Programas"` no `package.json` para corrigir o nome exibido no menu de plugins do MeshCentral
+
 ## [1.1.0] - 2026-02-23
 ### Adicionado
 - Botão **Desinstalar** em cada linha da tabela de softwares

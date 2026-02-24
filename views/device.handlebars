@@ -291,7 +291,7 @@ function renderTable() {
   tbody.innerHTML = slice.map(function (a) {
     var archBadge = a.architecture ? '<span class="badge b-arch">' + esc(a.architecture) + '</span>' : '<span style="color:var(--text-muted)"></span>';
     var typeBadge = a.systemComponent ? '<span class="badge b-sys">Sistema</span>' : '<span class="badge b-usr">Usuário</span>';
-    var delBtn = '<button class="btn-del" title="Desinstalar" onclick="confirmUninstall(' + JSON.stringify(esc(a.name)) + ')">' +
+    var delBtn = '<button class="btn-del" title="Desinstalar" onclick="confirmUninstall(' + esc(JSON.stringify(a.name)) + ')">' +
       '&#128465; Desinstalar</button>';
     return '<tr id="row-' + esc(a.name).replace(/[^a-zA-Z0-9]/g, '_').slice(0,30) + '">'
       + '<td><div class="icon-cell"><img class="app-icon" src="' + icon + '" alt="" onerror="this.style.display=\'none\'">'
